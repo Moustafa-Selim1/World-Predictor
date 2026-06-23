@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Platform 2 — Predictive Type</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0E1A24;
+    --panel: #142634;
+    --amber: #F2A93B;
+    --red: #D6453D;
+    --chalk: #EDE7D9;
+    --steel: #3A5066;
+    --steel-dim: #25394A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(242,169,59,0.06), transparent 60%);
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--chalk);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .board {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border: 1px solid var(--steel);
+    border-radius: 6px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+
+  /* --- Header: station nameplate --- */
+  .nameplate {
+    padding: 22px 28px 18px;
+    border-bottom: 2px solid var(--amber);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .nameplate h1 {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .nameplate .platform-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .subline {
+    padding: 10px 28px 0;
+    font-size: 12.5px;
+    color: var(--steel);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* --- Log: ticker of composed text --- */
+  .log {
+    padding: 20px 28px 6px;
+    min-height: 64px;
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    line-height: 1.7;
+    word-wrap: break-word;
+  }
+
+  .log .placeholder {
+    color: var(--steel);
+  }
+
+  .log .composed {
+    color: var(--chalk);
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 17px;
+    background: var(--amber);
+    margin-left: 2px;
+    vertical-align: -2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* --- Suggestions: upcoming departures --- */
+  .departures {
+    padding: 4px 22px 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 44px;
+    align-items: flex-start;
+  }
+
+  .chip {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    background: var(--steel-dim);
+    color: var(--chalk);
+    border: 1px solid var(--steel);
+    border-radius: 3px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    perspective: 200px;
+  }
+
+  .chip:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .chip.rank-0 {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  /* split-flap flip animation when a chip is chosen */
+  @keyframes flip {
+    0%   { transform: rotateX(0deg); }
+    50%  { transform: rotateX(90deg); opacity: 0.3; }
+    100% { transform: rotateX(0deg); }
+  }
+  .flap-in {
+    display: inline-block;
+    animation: flip 0.32s ease;
+    transform-origin: center;
+  }
+
+  .empty-note {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--steel);
+    padding: 2px 6px;
+  }
+
+  /* --- Input row --- */
+  .input-row {
+    display: flex;
+    border-top: 1px solid var(--steel);
+    margin-top: 10px;
+  }
+
+  .input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--chalk);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    padding: 16px 28px;
+  }
+
+  .input-row input::placeholder {
+    color: var(--steel);
+  }
+
+  .input-row button {
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .input-row button:hover { background: #ffbf5c; }
+  .input-row button:active { background: #d6932c; }
+
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 28px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10.5px;
+    color: var(--steel);
+    letter-spacing: 0.04em;
+  }
+
+  .footer-strip .dot {
+    color: var(--red);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor, .flap-in { animation: none; }
+  }
+
+  @media (max-width: 480px) {
+    .nameplate { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .log, .departures, .subline { padding-left: 18px; padding-right: 18px; }
+    .input-row input, .footer-strip { padding-left: 18px; padding-right: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+  <div class="nameplate">
+    <h1>Predictive Type</h1>
+    <span class="platform-tag">PLATFORM 2</span>
+  </div>
+  <div class="subline">NEXT WORD SERVICE — STATUS: <span id="status-text">CONNECTING…</span></div>
+
+  <div class="log" id="log">
+    <span class="placeholder">Start typing below — predictions arrive here as upcoming stops.</span>
+  </div>
+
+  <div class="departures" id="departures">
+    <span class="empty-note">awaiting input…</span>
+  </div>
+
+  <div class="input-row">
+    <input
+      type="text"
+      id="textInput"
+      placeholder="Type here…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button id="clearBtn">Clear</button>
+  </div>
+
+  <div class="footer-strip">
+    <span><span class="dot">●</span> trigram model · local inference</span>
+    <span id="state-count"></span>
+  </div>
+</div>
+
+<script>
+  const API_BASE = "/api";
+
+  const textInput = document.getElementById("textInput");
+  const log = document.getElementById("log");
+  const departures = document.getElementById("departures");
+  const statusText = document.getElementById("status-text");
+  const stateCount = document.getElementById("state-count");
+  const clearBtn = document.getElementById("clearBtn");
+
+  let debounceTimer = null;
+
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/health`);
+      const data = await res.json();
+      statusText.textContent = "ONLINE";
+      statusText.style.color = "#F2A93B";
+      stateCount.textContent = `${data.states.toLocaleString()} states · order ${data.order}`;
+    } catch (e) {
+      statusText.textContent = "OFFLINE — API not responding";
+      statusText.style.color = "#D6453D";
+    }
+  }
+
+  function renderLog() {
+    const val = textInput.value;
+    if (!val) {
+      log.innerHTML = `<span class="placeholder">Start typing below — predictions arrive here as upcoming stops.</span>`;
+      return;
+    }
+    log.innerHTML = `<span class="composed">${escapeHtml(val)}</span><span class="cursor"></span>`;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderDepartures(words) {
+    departures.innerHTML = "";
+    if (!words || words.length === 0) {
+      const note = document.createElement("span");
+      note.className = "empty-note";
+      note.textContent = "no predictions for this context yet";
+      departures.appendChild(note);
+      return;
+    }
+    words.forEach((word, i) => {
+      const chip = document.createElement("button");
+      chip.className = `chip rank-${i}`;
+      chip.type = "button";
+      chip.textContent = word;
+      chip.addEventListener("click", () => chooseWord(word, chip));
+      departures.appendChild(chip);
+    });
+  }
+
+  function chooseWord(word, chipEl) {
+    const current = textInput.value;
+    const needsSpace = current.length > 0 && !current.endsWith(" ");
+    textInput.value = current + (needsSpace ? " " : "") + word + " ";
+    textInput.focus();
+    flapAnimate();
+    renderLog();
+    fetchPredictions();
+  }
+
+  function flapAnimate() {
+    const cursor = log.querySelector(".cursor");
+    if (cursor) {
+      cursor.classList.add("flap-in");
+      setTimeout(() => cursor.classList.remove("flap-in"), 320);
+    }
+  }
+
+  async function fetchPredictions() {
+    const text = textInput.value;
+    try {
+      const res = await fetch(`${API_BASE}/predict?text=${encodeURIComponent(text)}&top_k=8`);
+      const data = await res.json();
+      renderDepartures(data.suggestions);
+    } catch (e) {
+      departures.innerHTML = `<span class="empty-note">backend unreachable — try refreshing</span>`;
+    }
+  }
+
+  textInput.addEventListener("input", () => {
+    renderLog();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchPredictions, 150);
+  });
+
+  clearBtn.addEventListener("click", () => {
+    textInput.value = "";
+    renderLog();
+    fetchPredictions();
+    textInput.focus();
+  });
+
+  checkHealth();
+  fetchPredictions();
+  textInput.focus();
+</script>
+
+</body>
+</html>
